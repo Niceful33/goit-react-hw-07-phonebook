@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { nanoid } from 'nanoid';
 import { Label, Submit, InputForm } from './Form.Styled';
-import { useDispatch, useSelector } from 'react-redux';
-import { addContact } from 'redux/contactsSlice';
-import { selectContacts } from 'redux/selectors';
+import {
+  useAddContactMutation,
+  useGetContactsQuery,
+} from 'redux/contactsSlice';
+import { Puff } from 'react-loader-spinner';
 
 export default function Form() {
+  const [addContact, { isLoading }] = useAddContactMutation();
+  const { data } = useGetContactsQuery();
+
   const [user, setUser] = useState('');
   const [number, setNumber] = useState('');
-  const dispatch = useDispatch();
-  const contacts = useSelector(selectContacts);
 
   const handleInputChange = event => {
     const { name, value } = event.currentTarget;
@@ -25,14 +27,26 @@ export default function Form() {
         break;
     }
   };
+
   const handleSubmit = event => {
     event.preventDefault();
-    if (contacts.some(contact => contact.user === user)) {
-      alert('Таке імя вже існує');
-      return;
-    }
-    dispatch(addContact({ user, number, id: nanoid() }));
+    const newContact = {
+      name: user,
+      phone: number,
+    };
+
+    formSubmitHandler(newContact);
+
     reset();
+  };
+
+  const formSubmitHandler = newContact => {
+    const checkContact = data.some(
+      existContact =>
+        existContact.name.toLowerCase() === newContact.name.toLowerCase()
+    );
+
+    return checkContact ? alert('таке імя вже існує') : addContact(newContact);
   };
 
   const reset = () => {
@@ -67,7 +81,10 @@ export default function Form() {
             onChange={handleInputChange}
           />
         </Label>
-        <Submit type="submit">Add contacts</Submit>
+        <Submit type="submit" disabled={isLoading}>
+          {isLoading && <Puff height="25" width="25" color="#130b0b" />}
+          Add contacts
+        </Submit>
       </form>
     </>
   );
